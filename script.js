@@ -263,3 +263,98 @@ window.addEventListener('scroll', () => {
         document.querySelector('nav ul li a[href*= '+ current +']').classList.add('active');
     });
 });
+
+// Set tanggal acara
+const countDownDate = new Date("Dec 15, 2024 09:00:00").getTime();
+
+// Update countdown setiap detik
+const x = setInterval(function() {
+    const now = new Date().getTime();
+    const distance = countDownDate - now;
+
+    // Menghitung waktu untuk hari, jam, menit, dan detik
+    const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+    // Menampilkan hasil di elemen yang sesuai
+    document.getElementById("days").innerHTML = days;
+    document.getElementById("hours").innerHTML = hours;
+    document.getElementById("minutes").innerHTML = minutes;
+    document.getElementById("seconds").innerHTML = seconds;
+
+    // Jika countdown selesai
+    if (distance < 0) {
+        clearInterval(x);
+        document.querySelector(".count-down").innerHTML = "Countdown selesai!";
+    }
+}, 1000);
+
+function copyToClipboard(text) {
+    // Buat elemen input untuk menyalin teks
+    const tempInput = document.createElement('input');
+    tempInput.value = text;
+    document.body.appendChild(tempInput);
+    tempInput.select();
+    document.execCommand('copy');
+    document.body.removeChild(tempInput);
+
+    // Pop-up alert menggunakan SweetAlert2
+    Swal.fire({
+        icon: 'success',
+        title: 'Berhasil!',
+        text: 'Nomor rekening ' + text + ' telah disalin ke clipboard!',
+        confirmButtonText: 'OK'
+    });
+}
+
+function fetchComments() {
+    fetch('load_comments.php')
+        .then(response => response.json())
+        .then(data => {
+            const commentsContainer = document.getElementById('comments-container');
+            commentsContainer.innerHTML = ''; // Kosongkan komentar sebelumnya
+            data.forEach(entry => {
+                const commentDiv = document.createElement('div');
+                commentDiv.className = 'comment';
+                commentDiv.innerHTML = `<strong>${entry.name} (${entry.attendance})</strong><p>${entry.message}</p>`;
+                commentsContainer.prepend(commentDiv); // Tambahkan di atas
+            });
+        })
+        .catch(error => console.error('Kesalahan:', error));
+}
+
+document.getElementById('guest-book-form').addEventListener('submit', function(event) {
+    event.preventDefault(); // Mencegah reload halaman
+
+    const name = document.getElementById('name').value;
+    const message = document.getElementById('message').value;
+    const attendance = document.getElementById('attendance').value;
+
+    fetch('submit.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `name=${encodeURIComponent(name)}&message=${encodeURIComponent(message)}&attendance=${encodeURIComponent(attendance)}`
+    })
+    .then(response => {
+        if (response.ok) {
+            // Kosongkan input
+            document.getElementById('name').value = '';
+            document.getElementById('message').value = '';
+            document.getElementById('attendance').value = '';
+            
+            // Ambil komentar terbaru
+            fetchComments();
+        } else {
+            console.error('Gagal mengirim ucapan');
+        }
+    })
+    .catch(error => console.error('Kesalahan:', error));
+});
+
+// Ambil komentar saat halaman dimuat
+fetchComments();
+
